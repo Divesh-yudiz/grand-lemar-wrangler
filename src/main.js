@@ -35,7 +35,7 @@ let currentCollar = 'standard';
 const CONFIG = {
   defaults: {
     buttoning: 'single_breasted_2',
-    shoulder: 'Structured',
+    shoulder: '_Unconstructed',
     martingaleBelt: true,
     invertedBoxPleat: true,
     chestPocket: "boat",
@@ -50,13 +50,12 @@ const CONFIG = {
 
   assets: {
     buttoning: {
-      single_breasted_2: '2_Buttons',
+      single_breasted_2: '2mm_Buttons',
       double_breasted_6: '6_buttons',
     },
     shoulder: {
-      Structured: 'Structured',
-      Unstructured: 'Unstructured',
-      Lightly_Padded: 'Lightly_Padded'
+      Unconstructed: '_Unconstructed',
+      Lightly_Padded: '_Lightly_Padded'
     },
 
   },
@@ -319,7 +318,7 @@ function applyDefaultConfig() {
 
 
 
-///Start of update functions
+///Start of update functions----------------------------------------------------------
 function updateButtoning(styleKey, toggle = true, visibility = true) {
   const buttoningMap = {
     single_breasted_2: '2mm_Buttons',
@@ -343,7 +342,6 @@ function updateBack() {
 
 function updateShoulder(styleKey) {
   const shoulderMap = {
-    Structured: 'Structured',
     Unconstructed: '_Unconstructed',
     Lightly_Padded: '_Lightly_Padded',
   };
@@ -367,7 +365,7 @@ function updateShoulder(styleKey) {
 
   // Make 2mm_front visible
   naturalShoulder.visible = true;
-  const variantName = shoulderMap[styleKey] || 'Structured';
+  const variantName = shoulderMap[styleKey] || '_Unconstructed';
 
   // Hide all variants first, then show only the target one
   naturalShoulder.children.forEach(variant => {
@@ -390,19 +388,7 @@ function updateShoulder(styleKey) {
 // Fix the martingale belt function to use correct mesh names
 function martingaleBelt(styleKey, visibility = true) {
   currentMartingaleBelt = styleKey;
-  const ButtonsGroup = loadedMeshes['Buttons'];
-  if (ButtonsGroup) {
-    ButtonsGroup.traverse((child) => {
-      if (child.name === "belt_button" || child.name === "belt_buttons") {
-        child.visible = visibility;
-        child.traverse((subChild) => {
-          subChild.visible = visibility;
-        });
-      }
-    });
-  }
-
-  updateVariant('belt', "none", true, visibility);
+  updateVariant('belt', "sweep2", true, visibility);
 }
 
 // Fix the inverted box pleat function to use correct mesh names
@@ -432,36 +418,26 @@ function invertedBoxPleat(styleKey, visibility = true) {
     return;
   }
 
-  const buttoningConfig = currentButtoning || CONFIG.defaults.buttoning;
   const shoulderConfig = currentShoulder || CONFIG.defaults.shoulder;
 
   // Map buttoning and shoulder configuration to the appropriate pleat variant
   const pleatVariantMap = {
-    '6_Buttons_Structured': '6button_Structured_Inverted_box_pleat',
-    '6_Buttons_Unconstructed': '6button_Unconstructed_Inverted_box_pleat',
-    '6_Buttons_Lightly_Padded': '6buttonLightly_Padded_Inverted_box_pleat',
-    '2_Buttons_Structured': 'Structured_Inverted_box_pleat_2Button',
-    '2_Buttons_Unconstructed': '_Unconstructed_Inverted_box_pleat_2Button',
-    '2_Buttons_Lightly_Padded': 'Lightly_Padded_Inverted_box_pleat_2Button'
+    '2mm_Buttons_Lightly_Padded': 'Lightly_Padded_Inverted_box_pleat_2Button',
+    '2mm_Buttons_Unconstructed': 'Unconstructed_Inverted_box_pleat_2Button',
   };
 
   // Create the key based on buttoning and shoulder
   let pleatKey;
-  if (buttoningConfig === 'single_breasted_2') {
-    pleatKey = `2_Buttons_${shoulderConfig}`;
-  } else if (buttoningConfig === 'double_breasted_6') {
-    pleatKey = `6_Buttons_${shoulderConfig}`;
-  } else {
-    console.warn(`Unsupported buttoning type for inverted box pleat: ${buttoningConfig}`);
-    return;
-  }
+  pleatKey = `${shoulderConfig}`;
+
+  console.log("pleatKey", pleatKey);
 
   const targetPleatVariant = pleatVariantMap[pleatKey];
   if (targetPleatVariant) {
     updatePleatButtons(true);
     updateVariant('pleat', targetPleatVariant, true, visibility);
   } else {
-    console.warn(`No pleat variant found for buttoning: ${buttoningConfig}, shoulder: ${shoulderConfig}`);
+    console.warn(`No pleat variant found for buttoning: ${shoulderConfig}, shoulder: ${shoulderConfig}`);
   }
 }
 
@@ -476,13 +452,18 @@ function updateChestPocket(styleKey) {
 
 function updateSidePocket(styleKey) {
   const sidePocketMap = {
-    'jetted': 'jetted_pocket',
     'path-with-flaps': 'Patch',
-    'postbox': 'postbox_pocket',
     'slanted-welt': 'slanted',
+    'slanted-welt-buttons': 'slanted',
   };
   currentSidePocket = styleKey;
-  updateVariant('Sidepocket', sidePocketMap[styleKey]);
+  if (styleKey === 'slanted-welt-buttons') {
+    updateVariant('Sidepocket', sidePocketMap[styleKey]);
+    updateVariant('Buttons', 'slated_button', false, true);
+  } else {
+    updateVariant('Buttons', 'slated_button', false, false);
+    updateVariant('Sidepocket', sidePocketMap[styleKey]);
+  }
 }
 
 // Fix the sleeve design function to use correct mesh names
@@ -704,7 +685,7 @@ function applyTexturesToGroups(colorTexture, normalTexture, targetGroups, materi
  * @param {string} normalTextureUrl - URL or path to the fabric normal texture
  * @param {Object} materialOptions - Additional material properties
  */
-function loadAndApplyFabric(colorTextureUrl, normalTextureUrl, materialOptions = {}, targetGroups = ['Front', 'Shoulder', 'back', 'ChestPocket', 'Sidepocket', 'Sleeve_design', 'Inverted_Box_Pleat', 'belt'], excludeGroups = ['Buttons', 'Lining', '2mm_Lining']) {
+function loadAndApplyFabric(colorTextureUrl, normalTextureUrl, materialOptions = {}, targetGroups = ['Front', 'Shoulder', 'back', 'ChestPocket', 'Sidepocket', 'Sleeve_design', 'Inverted_Box_Pleat', 'belt'], excludeGroups = ['Buttons', 'lining',]) {
   const textureLoader = new THREE.TextureLoader();
   let colorTextureLoaded = false;
   let normalTextureLoaded = false;
@@ -719,10 +700,6 @@ function loadAndApplyFabric(colorTextureUrl, normalTextureUrl, materialOptions =
 
       if (colorTextureLoaded && normalTextureLoaded) {
         applyTexturesToGroups(colorTexture, normalTexture, targetGroups, materialOptions, excludeGroups);
-        // Force a second application after a short delay to ensure consistency
-        setTimeout(() => {
-          // Removed buttonhole lapel texture application as lapel functionality is removed
-        }, 100);
       }
     },
     undefined,
@@ -971,7 +948,7 @@ function loadAndApplyLiningFabric(colorTextureUrl, normalTextureUrl, materialOpt
       colorTextureLoaded = true;
 
       if (colorTextureLoaded && normalTextureLoaded) {
-        applyTexturesToGroups(colorTexture, normalTexture, ['Lining', '2mm_Lining',], materialOptions, ['Front', 'Shoulder', 'vent', 'ChestPocket', 'Sidepocket', 'Sleeve_design', 'Inverted_Box_Pleat', 'Martingale_Belt', 'Buttons']);
+        applyTexturesToGroups(colorTexture, normalTexture, ['lining'], materialOptions, ['Front', 'Shoulder', 'vent', 'ChestPocket', 'Sidepocket', 'Sleeve_design', 'Inverted_Box_Pleat', 'Martingale_Belt', 'Buttons']);
       }
     },
     undefined,
@@ -988,7 +965,7 @@ function loadAndApplyLiningFabric(colorTextureUrl, normalTextureUrl, materialOpt
       normalTextureLoaded = true;
 
       if (colorTextureLoaded && normalTextureLoaded) {
-        applyTexturesToGroups(colorTexture, normalTexture, ['LiningSleeve', 'full', 'half'], materialOptions, ['Front', 'Shoulder', 'vent', 'ChestPocket', 'Sidepocket', 'Sleeve_design', 'Inverted_Box_Pleat', 'Martingale_Belt', 'Buttons']);
+        applyTexturesToGroups(colorTexture, normalTexture, ['Lining'], materialOptions, ['Front', 'Shoulder', 'vent', 'ChestPocket', 'Sidepocket', 'Sleeve_design', 'Inverted_Box_Pleat', 'Martingale_Belt', 'Buttons']);
       }
     },
     undefined,
@@ -1112,13 +1089,6 @@ function initConfigUI() {
   // Initialize button and lining fabric selection UIs
   updateButtonFabricSelectionUI(CONFIG.defaults.buttonFabric);
   updateLiningFabricSelectionUI(CONFIG.defaults.liningFabric);
-}
-
-// Add fabric change handler
-function handleFabricChange(fabricKey) {
-  console.log("handleFabricChange", fabricKey);
-  CONFIG.defaults.fabric = fabricKey;
-  updateFabric(fabricKey);
 }
 
 // Add button fabric change handler
