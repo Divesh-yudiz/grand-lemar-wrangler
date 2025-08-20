@@ -26,7 +26,7 @@ let lightOffset = {
 };
 
 // Remove lapel-related variables
-let currentButtoning, currentShoulder, currentMartingaleBelt, currentInvertedBoxPleat, currentFront, currentChestPocket, currentSidePocket, currentSleeveDesign, currentLinings;
+let currentButtoning, currentShoulder, currentMartingaleBelt, currentInvertedBoxPleat = true, currentFront, currentChestPocket, currentSidePocket, currentSleeveDesign, currentLinings;
 
 // Add collar-related variables
 let currentCollar = 'standard';
@@ -34,7 +34,7 @@ let currentCollar = 'standard';
 // ----- Configuration Data -----
 const CONFIG = {
   defaults: {
-    buttoning: 'single_breasted_2',
+    buttoning: 'Buttons_2mm',
     shoulder: '_Unconstructed',
     martingaleBelt: true,
     invertedBoxPleat: true,
@@ -50,7 +50,7 @@ const CONFIG = {
 
   assets: {
     buttoning: {
-      single_breasted_2: '2mm_Buttons',
+      Buttons_2mm: '2mm_Buttons',
       double_breasted_6: '6_buttons',
     },
     shoulder: {
@@ -301,9 +301,9 @@ function updateVariant(groupName, visibleChildName, toggle = true, visibility = 
 
 function applyDefaultConfig() {
   // scaleButtonsOnXAxis(1.09);
+  updateBack(); // Changed from updateFront() to updateBack()
   updateButtoning(CONFIG.defaults.buttoning);
   updateShoulder(CONFIG.defaults.shoulder);
-  updateBack(); // Changed from updateFront() to updateBack()
   martingaleBelt(CONFIG.defaults.martingaleBelt);
   invertedBoxPleat(CONFIG.defaults.invertedBoxPleat);
   updateChestPocket(CONFIG.defaults.chestPocket);
@@ -321,7 +321,7 @@ function applyDefaultConfig() {
 ///Start of update functions----------------------------------------------------------
 function updateButtoning(styleKey, toggle = true, visibility = true) {
   const buttoningMap = {
-    single_breasted_2: '2mm_Buttons',
+    Buttons_2mm: '2mm_Buttons',
     double_breasted_6: '6_buttons',
     belt_buttons: 'belt_button',
     slanted_buttons: 'slated_button',
@@ -335,9 +335,11 @@ function updateButtoning(styleKey, toggle = true, visibility = true) {
 }
 
 function updateBack() {
-  console.log({ "updateBack": "updateBack" })
-  updateVariant('back', "2mm_back");
-  console.log("loaded meshes", loadedMeshes);
+  if (currentInvertedBoxPleat === "false" || currentInvertedBoxPleat === false) {
+    updateVariant('back', "2mm_back", true, true);
+  } else {
+    updateVariant('back', "2mm_back", true, false);
+  }
 }
 
 function updateShoulder(styleKey) {
@@ -356,14 +358,12 @@ function updateShoulder(styleKey) {
 
   shoulderGroup.visible = true;
 
-  // Find the 2mm_front child
   const naturalShoulder = shoulderGroup.children.find(child => child.name === '2mm_front');
   if (!naturalShoulder) {
     console.warn('2mm_front not found');
     return;
   }
 
-  // Make 2mm_front visible
   naturalShoulder.visible = true;
   const variantName = shoulderMap[styleKey] || '_Unconstructed';
 
@@ -371,13 +371,11 @@ function updateShoulder(styleKey) {
   naturalShoulder.children.forEach(variant => {
     if (variant.name === variantName) {
       variant.visible = true;
-      // Make all nested children of this variant visible
       variant.traverse((subChild) => {
         subChild.visible = true;
       });
     } else {
       variant.visible = false;
-      // Make all nested children of other variants invisible
       variant.traverse((subChild) => {
         subChild.visible = false;
       });
@@ -385,20 +383,20 @@ function updateShoulder(styleKey) {
   });
 }
 
-// Fix the martingale belt function to use correct mesh names
+
 function martingaleBelt(styleKey, visibility = true) {
   currentMartingaleBelt = styleKey;
-  updateVariant('belt', "sweep2", true, visibility);
+  updateVariant('belt', "martingle_belt", true, visibility);
 }
 
-// Fix the inverted box pleat function to use correct mesh names
+
 function invertedBoxPleat(styleKey, visibility = true) {
 
   function updatePleatButtons(visibility) {
     const pleatButtonsGroup = loadedMeshes['Buttons'];
     if (pleatButtonsGroup) {
       pleatButtonsGroup.traverse((child) => {
-        if (child.name === "pleat_buttons") {
+        if (child.name === "pleat_button") {
           child.visible = visibility;
           child.traverse((subChild) => {
             subChild.visible = visibility;
@@ -414,6 +412,7 @@ function invertedBoxPleat(styleKey, visibility = true) {
 
   if (currentInvertedBoxPleat === "false" || currentInvertedBoxPleat === false) {
     updateVariant('pleat', "none", true, false);
+    updateBack(false);
     updatePleatButtons(false);
     return;
   }
@@ -422,19 +421,18 @@ function invertedBoxPleat(styleKey, visibility = true) {
 
   // Map buttoning and shoulder configuration to the appropriate pleat variant
   const pleatVariantMap = {
-    '2mm_Buttons_Lightly_Padded': 'Lightly_Padded_Inverted_box_pleat_2Button',
-    '2mm_Buttons_Unconstructed': 'Unconstructed_Inverted_box_pleat_2Button',
+    '_Lightly_Padded': 'Lightly_Padded_Inverted_box_pleat',
+    '_Unconstructed': '2mm_invert_box_pleat',
   };
 
   // Create the key based on buttoning and shoulder
   let pleatKey;
   pleatKey = `${shoulderConfig}`;
 
-  console.log("pleatKey", pleatKey);
-
   const targetPleatVariant = pleatVariantMap[pleatKey];
   if (targetPleatVariant) {
     updatePleatButtons(true);
+    updateBack(false);
     updateVariant('pleat', targetPleatVariant, true, visibility);
   } else {
     console.warn(`No pleat variant found for buttoning: ${shoulderConfig}, shoulder: ${shoulderConfig}`);
@@ -592,12 +590,11 @@ function getConfigValue(configKey) {
 }
 
 /**
- * Unified function to apply textures to specific mesh groups
- * @param {THREE.Texture} colorTexture - The fabric color texture to apply
- * @param {THREE.Texture} normalTexture - The fabric normal texture to apply
- * @param {Array} targetGroups - Array of group names to apply textures to
- * @param {Object} materialOptions - Additional material properties
- * @param {Array} excludeGroups - Array of group names to exclude
+ * @param {THREE.Texture} colorTexture
+ * @param {THREE.Texture} normalTexture
+ * @param {Array} targetGroups
+ * @param {Object} materialOptions
+ * @param {Array} excludeGroups
  */
 function applyTexturesToGroups(colorTexture, normalTexture, targetGroups, materialOptions = {}, excludeGroups = []) {
   if (!suitGroup || !targetGroups || targetGroups.length === 0) return;
@@ -685,7 +682,7 @@ function applyTexturesToGroups(colorTexture, normalTexture, targetGroups, materi
  * @param {string} normalTextureUrl - URL or path to the fabric normal texture
  * @param {Object} materialOptions - Additional material properties
  */
-function loadAndApplyFabric(colorTextureUrl, normalTextureUrl, materialOptions = {}, targetGroups = ['Front', 'Shoulder', 'back', 'ChestPocket', 'Sidepocket', 'Sleeve_design', 'Inverted_Box_Pleat', 'belt'], excludeGroups = ['Buttons', 'lining',]) {
+function loadAndApplyFabric(colorTextureUrl, normalTextureUrl, materialOptions = {}, targetGroups = ['Front', 'Shoulder', 'back', 'ChestPocket', 'Sidepocket', 'Sleeve_design', 'pleat', 'belt'], excludeGroups = ['Buttons', 'lining',]) {
   const textureLoader = new THREE.TextureLoader();
   let colorTextureLoaded = false;
   let normalTextureLoaded = false;
@@ -749,9 +746,7 @@ function updateFabric(fabricKey) {
 
 // Add button fabric update function
 function updateButtonFabric(fabricKey) {
-  console.log("updateButtonFabric", fabricKey);
   const fabricConfig = CONFIG.buttonFabrics[fabricKey];
-  console.log("fabricConfig", fabricConfig);
   if (!fabricConfig) {
     console.warn(`❌ Button fabric configuration not found for: ${fabricKey}`);
     return;
@@ -811,14 +806,6 @@ function handleConfigChange(event) {
   const value = event.target.value;
   CONFIG.defaults[configType] = value;
 
-  if (configType === 'buttoning') {
-    updateButtoning(value);
-    updateBack(); // Changed from updateFront() to updateBack()
-    updateLinings();
-    const currentMartingaleBelt = getConfigValue('martingaleBelt');
-    martingaleBelt(currentMartingaleBelt, currentMartingaleBelt);
-  }
-
   if (configType === 'shoulder') {
     updateShoulder(value);
     updateBack(); // Changed from updateFront() to updateBack()
@@ -827,7 +814,6 @@ function handleConfigChange(event) {
 
   if (configType === 'inverted-box-pleat') {
     currentInvertedBoxPleat = value;
-    console.log("currentInvertedBoxPleat", currentInvertedBoxPleat);
     invertedBoxPleat(value);
   }
 
@@ -856,20 +842,14 @@ function handleConfigChange(event) {
       updateLinings(false);
     }
   }
-
-  if (configType === 'collar') {
-    updateCollar(value);
-  }
 }
 
 /**
- * Load and apply button fabric textures
- * @param {string} colorTextureUrl - URL or path to the button fabric color texture
- * @param {string} normalTextureUrl - URL or path to the button fabric normal texture
- * @param {Object} materialOptions - Additional material properties
+ * @param {string} colorTextureUrl
+ * @param {string} normalTextureUrl
+ * @param {Object} materialOptions
  */
 function loadAndApplyButtonFabric(colorTextureUrl, normalTextureUrl, materialOptions = {}) {
-  console.log("loadAndApplyButtonFabric", colorTextureUrl, normalTextureUrl);
   const textureLoader = new THREE.TextureLoader();
   let colorTextureLoaded = false;
   let normalTextureLoaded = false;
@@ -886,7 +866,7 @@ function loadAndApplyButtonFabric(colorTextureUrl, normalTextureUrl, materialOpt
         // Apply button fabric texture to all button elements
         applyTexturesToGroups(colorTexture, null, [
           'Buttons', '2_Buttons', '6_buttons', 'belt_button', 'belt_buttons',
-          'pleat_buttons', 'sleave_buttons', 'sec_strap', 'one_strap_button'
+          'pleat_buttons', 'sleave_buttons', 'sec_strap', 'one_strap_button', 'pleat_button'
         ], materialOptions, [
           'Full_Sleeve_Strap_with_buttons', 'Sleeve_Eqaulettes003',
           'one_strap002'
@@ -911,7 +891,7 @@ function loadAndApplyButtonFabric(colorTextureUrl, normalTextureUrl, materialOpt
           // Apply button fabric texture to all button elements
           applyTexturesToGroups(colorTexture, normalTexture, [
             'Buttons', '2_Buttons', '6_buttons', 'belt_button', 'belt_buttons',
-            'pleat_buttons', 'sleave_buttons', 'sec_strap', 'one_strap_button'
+            'pleat_buttons', 'sleave_buttons', 'sec_strap', 'one_strap_button', 'pleat_button'
           ], materialOptions, [
             'Full_Sleeve_Strap_with_buttons', 'Sleeve_Eqaulettes003',
             'one_strap002'
@@ -977,22 +957,16 @@ function loadAndApplyLiningFabric(colorTextureUrl, normalTextureUrl, materialOpt
 
 // ----- Initialize Fabric Selection UI -----
 function initFabricSelectionUI() {
-  // Add fabric card selection event listeners
   const fabricCards = document.querySelectorAll('.fabric-card');
   fabricCards.forEach(card => {
     card.addEventListener('click', () => {
-      // Remove selection from all cards
       fabricCards.forEach(c => c.classList.remove('selected'));
-      // Add selection to clicked card
       card.classList.add('selected');
       selectedMainFabric = card.dataset.fabric;
-
-      // Update the 3D model with selected fabric
       updateFabric(selectedMainFabric);
     });
   });
 
-  // Add next button event listener
   const fabricNextBtn = document.getElementById('fabric-next-btn');
   if (fabricNextBtn) {
     fabricNextBtn.addEventListener('click', () => {
@@ -1128,70 +1102,3 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(viewerWidth, viewerHeight);
 });
-
-// Fix the button scaling function to use correct mesh names
-function scaleButtonsOnXAxis(scaleFactor = 1.2) {
-  if (!suitGroup) {
-    console.warn('Suit group not found');
-    return;
-  }
-
-  // Define all button group names that should be scaled
-  const buttonGroups = [
-    'Buttons', '2_Buttons', '6_buttons', 'belt_button', 'belt_buttons',
-    'pleat_buttons', 'sleave_buttons', 'sec_strap', 'one_strap_button'
-  ];
-
-  // Function to scale a mesh or group on X axis
-  function scaleMeshOnX(mesh, scaleX) {
-    if (mesh.isMesh) {
-      // Store original scale if not already stored
-      if (!mesh.userData.originalScale) {
-        mesh.userData.originalScale = {
-          x: mesh.scale.x,
-          y: mesh.scale.y,
-          z: mesh.scale.z
-        };
-      }
-
-      // Apply scaling only on X axis
-      mesh.scale.x = mesh.userData.originalScale.x * scaleX;
-      mesh.scale.needsUpdate = true;
-    }
-  }
-
-  // Traverse through the suit group to find and scale buttons
-  suitGroup.traverse((child) => {
-    // Check if the current child is a button group
-    if (buttonGroups.includes(child.name)) {
-      // Scale the button group itself
-      scaleMeshOnX(child, scaleFactor);
-
-      // Also scale all children within the button group
-      child.traverse((subChild) => {
-        scaleMeshOnX(subChild, scaleFactor);
-      });
-    }
-  });
-
-  console.log(`✅ Buttons scaled on X-axis by factor: ${scaleFactor}`);
-}
-
-// Function to reset button scaling to original size
-function resetButtonScaling() {
-  if (!suitGroup) {
-    console.warn('Suit group not found');
-    return;
-  }
-
-  suitGroup.traverse((child) => {
-    if (child.userData.originalScale) {
-      child.scale.x = child.userData.originalScale.x;
-      child.scale.y = child.userData.originalScale.y;
-      child.scale.z = child.userData.originalScale.z;
-      child.scale.needsUpdate = true;
-    }
-  });
-
-  console.log('✅ Button scaling reset to original size');
-}
