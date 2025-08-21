@@ -29,13 +29,13 @@ let lightOffset = {
 let currentButtoning, currentShoulder, currentMartingaleBelt, currentInvertedBoxPleat = true, currentFront, currentChestPocket, currentSidePocket, currentSleeveDesign, currentLinings;
 
 // Add collar-related variables
-let currentCollar = 'standard';
+let currentCollar = 'unconstructed';
 
 // ----- Configuration Data -----
 const CONFIG = {
   defaults: {
-    buttoning: 'Buttons_2mm',
-    shoulder: '_Unconstructed',
+    buttoning: 'Unconstructed',
+    shoulder: 'Unconstructed',
     martingaleBelt: true,
     invertedBoxPleat: true,
     chestPocket: "boat",
@@ -45,12 +45,12 @@ const CONFIG = {
     fabric: "fabric1",
     buttonFabric: "button-fabric1", // Add button fabric default
     liningFabric: "lining-fabric1",  // Add lining fabric default
-    collar: "standard" // Add collar default
+    collar: "unconstructed" // Add collar default
   },
 
   assets: {
     buttoning: {
-      Buttons_2mm: '2mm_Buttons',
+      Unconstructed: '2mm_Button',
       double_breasted_6: '6_buttons',
     },
     shoulder: {
@@ -313,7 +313,6 @@ function applyDefaultConfig() {
   updateFabric(CONFIG.defaults.fabric); // Add fabric update
   updateButtonFabric(CONFIG.defaults.buttonFabric); // Add button fabric update
   updateLiningFabric(CONFIG.defaults.liningFabric); // Add lining fabric update
-  updateCollar(CONFIG.defaults.collar); // Add collar update
 }
 
 
@@ -321,8 +320,8 @@ function applyDefaultConfig() {
 ///Start of update functions----------------------------------------------------------
 function updateButtoning(styleKey, toggle = true, visibility = true) {
   const buttoningMap = {
-    Buttons_2mm: '2mm_Buttons',
-    double_breasted_6: '6_buttons',
+    Unconstructed: '2mm_Button',
+    Lightly_Padded: '0mm_Buttons',
     belt_buttons: 'belt_button',
     slanted_buttons: 'slated_button',
     one_strap: 'one_strap_button',
@@ -336,19 +335,33 @@ function updateButtoning(styleKey, toggle = true, visibility = true) {
 
 function updateBack() {
   if (currentInvertedBoxPleat === "false" || currentInvertedBoxPleat === false) {
-    updateVariant('back', "2mm_back", true, true);
+    if (currentShoulder == "Unconstructed") {
+      updateVariant('back', "2mm_back", true, true);
+    } else {
+      updateVariant('back', "0mm_back", true, true);
+    }
   } else {
-    updateVariant('back', "2mm_back", true, false);
+    if (currentShoulder == "Unconstructed") {
+      updateVariant('back', "2mm_back", true, false);
+    } else {
+      updateVariant('back', "0mm_back", true, false);
+    }
   }
 }
 
+
 function updateShoulder(styleKey) {
   const shoulderMap = {
-    Unconstructed: '_Unconstructed',
-    Lightly_Padded: '_Lightly_Padded',
+    Unconstructed: '2mm_front',
+    Lightly_Padded: '0mm_front',
   };
 
+
   currentShoulder = styleKey;
+
+  updateCollar(styleKey);
+  updateButtoning(styleKey)
+  updateBack()
 
   const shoulderGroup = loadedMeshes['Shoulder'];
   if (!shoulderGroup) {
@@ -358,39 +371,40 @@ function updateShoulder(styleKey) {
 
   shoulderGroup.visible = true;
 
-  const naturalShoulder = shoulderGroup.children.find(child => child.name === '2mm_front');
-  if (!naturalShoulder) {
-    console.warn('2mm_front not found');
-    return;
-  }
+  const targetName = shoulderMap[styleKey];
+  let found = false;
 
-  naturalShoulder.visible = true;
-  const variantName = shoulderMap[styleKey] || '_Unconstructed';
+  // Hide all variants; show only the target
+  shoulderGroup.children.forEach((variant) => {
+    const isTarget = variant.name === targetName;
+    if (isTarget) found = true;
 
-  // Hide all variants first, then show only the target one
-  naturalShoulder.children.forEach(variant => {
-    if (variant.name === variantName) {
-      variant.visible = true;
-      variant.traverse((subChild) => {
-        subChild.visible = true;
-      });
-    } else {
+    variant.visible = isTarget;
+    variant.traverse((subChild) => {
+      subChild.visible = isTarget;
+    });
+  });
+
+  if (!found) {
+    console.warn(`Shoulder variant not found for "${styleKey}"`);
+    // Ensure nothing is shown if we don't find the target
+    shoulderGroup.children.forEach((variant) => {
       variant.visible = false;
       variant.traverse((subChild) => {
         subChild.visible = false;
       });
-    }
-  });
+    });
+  }
 }
 
 
 function martingaleBelt(styleKey, visibility = true) {
   currentMartingaleBelt = styleKey;
-  updateVariant('belt', "martingle_belt", true, visibility);
+  updateVariant('belt', "Martingle_blet", true, visibility);
 }
 
 
-function invertedBoxPleat(styleKey, visibility = true) {
+function invertedBoxPleat(styleKey = currentInvertedBoxPleat, visibility = true) {
 
   function updatePleatButtons(visibility) {
     const pleatButtonsGroup = loadedMeshes['Buttons'];
@@ -413,7 +427,11 @@ function invertedBoxPleat(styleKey, visibility = true) {
   if (currentInvertedBoxPleat === "false" || currentInvertedBoxPleat === false) {
     updateVariant('pleat', "none", true, false);
     updateBack(false);
-    updatePleatButtons(false);
+    if (styleKey === "false") {
+      updatePleatButtons(false);
+    } else {
+      updatePleatButtons(true);
+    }
     return;
   }
 
@@ -421,8 +439,8 @@ function invertedBoxPleat(styleKey, visibility = true) {
 
   // Map buttoning and shoulder configuration to the appropriate pleat variant
   const pleatVariantMap = {
-    '_Lightly_Padded': 'Lightly_Padded_Inverted_box_pleat',
-    '_Unconstructed': '2mm_invert_box_pleat',
+    'Lightly_Padded': '0mm_inverted_pleat',
+    'Unconstructed': '2mm_invert_box_pleat',
   };
 
   // Create the key based on buttoning and shoulder
@@ -431,7 +449,7 @@ function invertedBoxPleat(styleKey, visibility = true) {
 
   const targetPleatVariant = pleatVariantMap[pleatKey];
   if (targetPleatVariant) {
-    updatePleatButtons(true);
+    updatePleatButtons(styleKey);
     updateBack(false);
     updateVariant('pleat', targetPleatVariant, true, visibility);
   } else {
@@ -510,10 +528,8 @@ function updateLinings(visibility = true) {
 // Add collar update function after the other update functions
 function updateCollar(styleKey) {
   const collarMap = {
-    'standard': '2mm_collar',
-    'wide': 'wide_collar',
-    'narrow': 'narrow_collar',
-    'none': 'none'
+    'Unconstructed': '2mm_collar',
+    'Lightly_Padded': '00mm_collar'
   };
 
   currentCollar = styleKey;
@@ -682,7 +698,7 @@ function applyTexturesToGroups(colorTexture, normalTexture, targetGroups, materi
  * @param {string} normalTextureUrl - URL or path to the fabric normal texture
  * @param {Object} materialOptions - Additional material properties
  */
-function loadAndApplyFabric(colorTextureUrl, normalTextureUrl, materialOptions = {}, targetGroups = ['Front', 'Shoulder', 'back', 'ChestPocket', 'Sidepocket', 'Sleeve_design', 'pleat', 'belt'], excludeGroups = ['Buttons', 'lining',]) {
+function loadAndApplyFabric(colorTextureUrl, normalTextureUrl, materialOptions = {}, targetGroups = ['Front', 'Shoulder', 'Collar', 'back', 'ChestPocket', 'Sidepocket', 'Sleeve_design', 'pleat', 'belt'], excludeGroups = ['Buttons', 'lining',]) {
   const textureLoader = new THREE.TextureLoader();
   let colorTextureLoaded = false;
   let normalTextureLoaded = false;
@@ -808,8 +824,8 @@ function handleConfigChange(event) {
 
   if (configType === 'shoulder') {
     updateShoulder(value);
-    updateBack(); // Changed from updateFront() to updateBack()
-    invertedBoxPleat(true);
+    updateBack();
+    invertedBoxPleat();
   }
 
   if (configType === 'inverted-box-pleat') {
