@@ -496,7 +496,8 @@ function updateSleeveDesign(styleKey) {
     updateVariant('sleave_buttons', 'sec_strap', true);
   } else if (styleKey === 'sleeve-strap') {
     updateVariant('sleave_buttons', 'one_strap_button', true);
-  } else if (styleKey === 'un-cuffed') {
+  } else if (styleKey === 'un-cuffed' || styleKey === 'cuffed') {
+    console.log("un_cuffed", styleKey)
     updateVariant('sleave_buttons', 'none', true);
   }
 
