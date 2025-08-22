@@ -364,6 +364,12 @@ function updateShoulder(styleKey) {
   updateBack()
   updateChestPocket();
 
+  if (currentShoulder == "Unconstructed") {
+    updateVariant('sewing', "line", false, true);
+  } else if (currentShoulder == "Lightly_Padded") {
+    updateVariant('sewing', "line", false, false);
+  }
+
   const shoulderGroup = loadedMeshes['Shoulder'];
   if (!shoulderGroup) {
     console.warn('Shoulder group not found');
