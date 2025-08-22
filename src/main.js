@@ -50,8 +50,8 @@ const CONFIG = {
 
   assets: {
     buttoning: {
-      Unconstructed: '2mm_Button',
-      double_breasted_6: '6_buttons',
+      Unconstructed: '0mm_Buttons',
+      Lightly_Padded: '2mm_Button',
     },
     shoulder: {
       Unconstructed: '_Unconstructed',
@@ -320,8 +320,8 @@ function applyDefaultConfig() {
 ///Start of update functions----------------------------------------------------------
 function updateButtoning(styleKey, toggle = true, visibility = true) {
   const buttoningMap = {
-    Unconstructed: '2mm_Button',
-    Lightly_Padded: '0mm_Buttons',
+    Unconstructed: '0mm_Buttons',
+    Lightly_Padded: '2mm_Button',
     belt_buttons: 'belt_button',
     slanted_buttons: 'slated_button',
     one_strap: 'one_strap_button',
@@ -336,15 +336,15 @@ function updateButtoning(styleKey, toggle = true, visibility = true) {
 function updateBack() {
   if (currentInvertedBoxPleat === "false" || currentInvertedBoxPleat === false) {
     if (currentShoulder == "Unconstructed") {
-      updateVariant('back', "2mm_back", true, true);
-    } else {
       updateVariant('back', "0mm_back", true, true);
+    } else {
+      updateVariant('back', "2mm_back", true, true);
     }
   } else {
     if (currentShoulder == "Unconstructed") {
-      updateVariant('back', "2mm_back", true, false);
-    } else {
       updateVariant('back', "0mm_back", true, false);
+    } else {
+      updateVariant('back', "2mm_back", true, false);
     }
   }
 }
@@ -352,8 +352,8 @@ function updateBack() {
 
 function updateShoulder(styleKey) {
   const shoulderMap = {
-    Unconstructed: '2mm_front',
-    Lightly_Padded: '0mm_front',
+    Unconstructed: '0mm_front',
+    Lightly_Padded: '2mm_front',
   };
 
 
@@ -362,6 +362,7 @@ function updateShoulder(styleKey) {
   updateCollar(styleKey);
   updateButtoning(styleKey)
   updateBack()
+  updateChestPocket();
 
   const shoulderGroup = loadedMeshes['Shoulder'];
   if (!shoulderGroup) {
@@ -439,8 +440,8 @@ function invertedBoxPleat(styleKey = currentInvertedBoxPleat, visibility = true)
 
   // Map buttoning and shoulder configuration to the appropriate pleat variant
   const pleatVariantMap = {
-    'Lightly_Padded': '0mm_inverted_pleat',
-    'Unconstructed': '2mm_invert_box_pleat',
+    'Lightly_Padded': '2mm_invert_box_pleat',
+    'Unconstructed': '0mm_inverted_pleat',
   };
 
   // Create the key based on buttoning and shoulder
@@ -457,13 +458,22 @@ function invertedBoxPleat(styleKey = currentInvertedBoxPleat, visibility = true)
   }
 }
 
-function updateChestPocket(styleKey) {
+function updateChestPocket(styleKey = currentChestPocket) {
   currentChestPocket = styleKey;
+
+  let targetStyleKey = styleKey;
+
+  if (styleKey === 'boat') {
+    targetStyleKey = currentShoulder;
+  }
+
   const chestPocketMap = {
-    'boat': 'boat',
+    'Unconstructed': '0mm_boat',
+    'Lightly_Padded': '2mm_boat',
     'none': 'none',
   };
-  updateVariant('ChestPocket', chestPocketMap[styleKey]);
+
+  updateVariant('ChestPocket', chestPocketMap[targetStyleKey]);
 }
 
 function updateSidePocket(styleKey) {
@@ -529,8 +539,8 @@ function updateLinings(visibility = true) {
 // Add collar update function after the other update functions
 function updateCollar(styleKey) {
   const collarMap = {
-    'Unconstructed': '2mm_collar',
-    'Lightly_Padded': '00mm_collar'
+    'Unconstructed': '00mm_collar',
+    'Lightly_Padded': '2mm_collar'
   };
 
   currentCollar = styleKey;
