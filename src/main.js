@@ -311,8 +311,8 @@ function applyDefaultConfig() {
   updateSleeveDesign(CONFIG.defaults.sleeveDesign);
   updateLinings(); // Remove parameter, let it determine dynamically
   updateFabric(CONFIG.defaults.fabric); // Add fabric update
-  updateButtonFabric(CONFIG.defaults.buttonFabric); // Add button fabric update
   updateLiningFabric(CONFIG.defaults.liningFabric); // Add lining fabric update
+  updateButtonFabric(CONFIG.defaults.buttonFabric); // Add button fabric update
 }
 
 
@@ -629,7 +629,7 @@ function getConfigValue(configKey) {
  * @param {Object} materialOptions
  * @param {Array} excludeGroups
  */
-function applyTexturesToGroups(colorTexture, normalTexture, targetGroups, materialOptions = {}, excludeGroups = []) {
+function applyTexturesToGroups(colorTexture, normalTexture, targetGroups, materialOptions = {}, excludeGroups = ['Buttons', 'lining', 'button']) {
   if (!suitGroup || !targetGroups || targetGroups.length === 0) return;
 
   // Configure texture settings
@@ -637,6 +637,7 @@ function applyTexturesToGroups(colorTexture, normalTexture, targetGroups, materi
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
     texture.encoding = THREE.sRGBEncoding;
+    // ... more code not shown ...
 
     const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
     texture.anisotropy = maxAnisotropy;
@@ -715,11 +716,12 @@ function applyTexturesToGroups(colorTexture, normalTexture, targetGroups, materi
  * @param {string} normalTextureUrl - URL or path to the fabric normal texture
  * @param {Object} materialOptions - Additional material properties
  */
-function loadAndApplyFabric(colorTextureUrl, normalTextureUrl, materialOptions = {}, targetGroups = ['Front', 'Shoulder', 'Collar', 'back', 'ChestPocket', 'Sidepocket', 'Sleeve_design', 'pleat', 'belt'], excludeGroups = ['Buttons', 'lining',]) {
+function loadAndApplyFabric(colorTextureUrl, normalTextureUrl, materialOptions = {}, targetGroups = ['Front', 'Shoulder', 'Collar', 'back', 'ChestPocket', 'Sidepocket', 'Sleeve_design', 'pleat', 'belt'], excludeGroups = ['Buttons', 'lining', 'button']) {
   const textureLoader = new THREE.TextureLoader();
   let colorTextureLoaded = false;
   let normalTextureLoaded = false;
   let colorTexture, normalTexture;
+  // ... more code not shown ...
 
   // Load color texture
   textureLoader.load(
