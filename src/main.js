@@ -263,7 +263,6 @@ async function storeTopLevelGroups(root) {
 function updateVariant(groupName, visibleChildName, toggle = true, visibility = true) {
   const group = loadedMeshes[groupName]; // e.g., Buttons, Shoulder
 
-
   if (!group) {
     console.warn(`Group '${groupName}' not found`);
     return;
@@ -491,9 +490,30 @@ function updateSidePocket(styleKey) {
   currentSidePocket = styleKey;
   if (styleKey === 'slanted-welt-buttons') {
     updateVariant('Sidepocket', sidePocketMap[styleKey]);
-    updateVariant('Buttons', 'slated_button', false, true);
+
+    const buttonsGroup = loadedMeshes['Buttons'];
+    if (buttonsGroup) {
+      buttonsGroup.children.forEach(child => {
+        if (child.name === "slated_button") {
+          child.visible = true;
+          child.traverse(subChild => {
+            subChild.visible = true;
+          });
+        }
+      });
+    }
   } else {
-    updateVariant('Buttons', 'slated_button', false, false);
+    const buttonsGroup = loadedMeshes['Buttons'];
+    if (buttonsGroup) {
+      buttonsGroup.children.forEach(child => {
+        if (child.name === "slated_button") {
+          child.visible = false;
+          child.traverse(subChild => {
+            subChild.visible = false;
+          });
+        }
+      });
+    }
     updateVariant('Sidepocket', sidePocketMap[styleKey]);
   }
 }
